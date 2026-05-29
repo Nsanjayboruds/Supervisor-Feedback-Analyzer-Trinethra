@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Trinethra — Supervisor Feedback Analyzer</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #08111f;
+        --panel: #1a202c;
+        --panel-strong: #1e293b;
+        --border: #374151;
+        --text: #e5eefb;
+        --muted: #9ca3af;
+        --accent: #6366f1;
+        --accent-2: #10b981;
+        --danger: #ef4444;
+        --warning: #f59e0b;
+        --shadow: none;
+      }
+
+      * { box-sizing: border-box; }
+      html, body { min-height: 100%; }
+      body {
+        margin: 0;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: var(--text);
+        background: var(--bg);      }
+
+      button, input, textarea, select { font: inherit; }
+      textarea, input, select {
+        width: 100%;
+        border: 1px solid var(--border);
+        background: rgba(2, 6, 23, 0.48);
+        color: var(--text);
+        border-radius: 16px;
+        padding: 12px 14px;
+        outline: none;
+      }
+      textarea:focus, input:focus, select:focus {
+        border-color: rgba(139, 92, 246, 0.7);
+        box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.16);
+      }
+      textarea { min-height: 220px; resize: vertical; line-height: 1.5; }
+      button {
+        border: 0;
+        border-radius: 999px;
+        padding: 11px 16px;
+        cursor: pointer;
+        color: white;
+        background: linear-gradient(135deg, var(--accent), #4f46e5);
+        box-shadow: 0 10px 30px rgba(79, 70, 229, 0.22);
+        transition: transform 0.15s ease, opacity 0.15s ease;
+      }
+      button:hover { transform: translateY(-1px); }
+      button:active { transform: translateY(0); opacity: 0.92; }
+      button.secondary { background: rgba(148, 163, 184, 0.14); box-shadow: none; }
+      button.success { background: linear-gradient(135deg, var(--accent-2), #16a34a); }
+      button.ghost { background: transparent; border: 1px solid var(--border); box-shadow: none; }
+      button.danger { background: linear-gradient(135deg, var(--danger), #ef4444); }
+      .app-shell {
+        max-width: 1480px;
+        margin: 0 auto;
+        padding: 28px;
+      }
+      .hero {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 28px;
+        border: 1px solid var(--border);
+        border-radius: 28px;
+        background: linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.72));
+        box-shadow: var(--shadow);
+        margin-bottom: 22px;
+      }
+      .eyebrow { color: #c4b5fd; text-transform: uppercase; letter-spacing: 0.14em; font-size: 12px; margin: 0 0 10px; }
+      .hero h1 { margin: 0; font-size: clamp(28px, 3vw, 44px); line-height: 1.05; }
+      .hero p { margin: 10px 0 0; color: var(--muted); max-width: 72ch; }
+      .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: rgba(2, 6, 23, 0.42);
+        color: var(--muted);
+        min-width: 180px;
+        justify-content: center;
+      }
+      .status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        background: var(--accent-2);
+        box-shadow: 0 0 0 5px rgba(34, 197, 94, 0.14);
+      }
+      .workspace {
+        display: grid;
+        grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.2fr);
+        gap: 20px;
+      }
+      .panel {
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+      .panel-header {
+        padding: 18px 20px 0;
+      }
+      .panel-title {
+        margin: 0;
+        font-size: 18px;
+      }
+      .panel-subtitle {
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .panel-body { padding: 20px; }
+      .stack { display: grid; gap: 14px; }
+      .field-label {
+        display: block;
+        font-size: 13px;
+        color: #cbd5e1;
+        margin-bottom: 8px;
+      }
+      .toolbar { display: grid; gap: 12px; }
+      .toolbar-grid {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr auto;
+        gap: 12px;
+        align-items: end;
+      }
+      .button-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .button-row button { flex: 0 0 auto; }
+      .hint {
+        font-size: 12px;
+        color: var(--muted);
+        line-height: 1.4;
+      }
+      .status {
+        min-height: 24px;
+        color: #cbd5e1;
+        font-size: 14px;
+      }
+      .output-shell { padding: 20px; display: grid; gap: 16px; }
+      .empty-state, .result-card {
+        border: 1px solid var(--border);
+        border-radius: 22px;
+        background: var(--panel-strong);
+      }
+      .empty-state {
+        padding: 28px;
+        color: var(--muted);
+        text-align: center;
+      }
+      .empty-state h2 { margin: 0 0 8px; color: var(--text); }
+      .result-card { padding: 18px; }
+      .result-title {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+        margin-bottom: 14px;
+      }
+      .result-title h3 { margin: 0; font-size: 16px; }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border-radius: 999px;
+        padding: 6px 10px;
+        background: rgba(139, 92, 246, 0.14);
+        color: #ddd6fe;
+        border: 1px solid rgba(139, 92, 246, 0.18);
+        font-size: 12px;
+      }
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+      }
+      .metric {
+        padding: 16px;
+        border-radius: 18px;
+        background: rgba(2, 6, 23, 0.38);
+        border: 1px solid var(--border);
+      }
+      .metric span { display: block; color: var(--muted); font-size: 12px; margin-bottom: 6px; }
+      .metric strong { font-size: 20px; }
+      .cards { display: grid; gap: 14px; }
+      .subgrid { display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .list { margin: 0; padding-left: 18px; color: #dbeafe; }
+      .list li + li { margin-top: 8px; }
+      .evidence-item {
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: rgba(2, 6, 23, 0.34);
+        padding: 14px;
+        display: grid;
+        gap: 12px;
+      }
+      .evidence-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+      .evidence-index { color: #c4b5fd; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+      .tag-chip {
+        display: inline-flex;
+        padding: 5px 10px;
+        border-radius: 999px;
+        background: rgba(34, 197, 94, 0.12);
+        color: #bbf7d0;
+        border: 1px solid rgba(34, 197, 94, 0.16);
+        font-size: 12px;
+      }
+      .inline-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+      .inline-row > * { flex: 1 1 160px; }
+      .toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #cbd5e1;
+        font-size: 14px;
+      }
+      .toggle input { width: auto; }
+      .export-bar {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+      }
+      .export-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+      pre {
+        white-space: pre-wrap;
+        word-break: break-word;
+        margin: 0;
+        padding: 16px;
+        border-radius: 16px;
+        background: rgba(2, 6, 23, 0.4);
+        border: 1px solid var(--border);
+        color: #dbeafe;
+      }
+      @media (max-width: 1180px) {
+        .workspace { grid-template-columns: 1fr; }
+        .metrics, .subgrid { grid-template-columns: 1fr 1fr; }
+        .toolbar-grid { grid-template-columns: 1fr; }
+      }
+      @media (max-width: 720px) {
+        .app-shell { padding: 16px; }
+        .hero { padding: 20px; }
+        .metrics, .subgrid { grid-template-columns: 1fr; }
+        .export-bar { align-items: stretch; }
+        .export-actions { width: 100%; }
+        .export-actions button { flex: 1 1 auto; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Trinethra</p>
+          <h1>Supervisor Feedback Analyzer</h1>
+          <p>Paste a transcript, run a local Ollama model, then refine evidence, scores, and follow-up output before saving or exporting.</p>
+        </div>
+        <div class="status-pill"><span class="status-dot"></span> Local-only analysis</div>
+      </section>
+
+
+      <section class="workspace">
+        <section class="panel">
+          <div class="panel-header">
+            <h2 class="panel-title">Input & Controls</h2>
+            <p class="panel-subtitle">Choose a model, paste the transcript, and run analysis locally.</p>
+          </div>
+          <div class="panel-body stack">
+            <div>
+              <label class="field-label" for="transcript">Paste supervisor transcript</label>
+              <textarea id="transcript" placeholder="Paste transcript here..."></textarea>
+            </div>
+
+            <div class="toolbar">
+              <div class="toolbar-grid">
+                <div>
+                  <label class="field-label" for="model">Model</label>
+                  <select id="model">
+                    <option value="llama3.2">llama3.2</option>
+                    <option value="mistral">mistral</option>
+                    <option value="phi3">phi3</option>
+                    <option value="gemma">gemma</option>
+                    <option value="custom">Custom...</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="field-label" for="modelInput">Model name</label>
+                  <input id="modelInput" placeholder="llama3.2" />
+                </div>
+                <div class="button-row">
+                  <button id="run" class="success">Run Analysis</button>
+                  <button id="loadSample" class="secondary">Load Sample</button>
+                </div>
+              </div>
+
+              <div class="button-row">
+                <button id="showPull" class="ghost">Show Pull Command</button>
+                <button id="autoPull" class="ghost">Auto Pull Model</button>
+                <button id="retry" class="ghost">Retry Last</button>
+                <button id="saveFinal" class="danger">Save Final Analysis</button>
+              </div>
+              <div class="hint">Tip: keep the model small if your machine is memory-constrained. The app will still show pull and retry help when needed.</div>
+            </div>
+
+            <div id="status" class="status"></div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2 class="panel-title">Analysis Output</h2>
+            <p class="panel-subtitle">Editable findings, scores, and exported final JSON live here.</p>
+          </div>
+          <div id="output" class="output-shell"></div>
+        </section>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

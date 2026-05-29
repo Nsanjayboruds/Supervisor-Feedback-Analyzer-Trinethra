@@ -1,0 +1,10 @@
+{
+  "fellow": {
+    "name": "Test Fellow"
+  },
+  "evidence": [],
+  "score": {
+    "value": 7,
+    "justification": "ok"
+  }
+}
